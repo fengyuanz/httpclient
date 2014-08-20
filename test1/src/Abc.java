@@ -11,7 +11,7 @@ public class Abc
 	// Method 1
 	private static void methodOne()
 	{
-		System.out.println("master 2");
+		System.out.println("one two three four five 6");
 	}
 
 }
