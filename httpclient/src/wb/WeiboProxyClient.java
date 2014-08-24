@@ -24,6 +24,11 @@ import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
+/**
+ * Test commit from different place
+ * @author Fengyuan
+ *
+ */
 public class WeiboProxyClient extends Thread {
 
 
