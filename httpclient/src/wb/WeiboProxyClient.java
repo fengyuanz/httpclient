@@ -26,6 +26,7 @@ import org.apache.http.message.BasicNameValuePair;
 
 /**
  * Test commit from different place
+ * Test conflict check in
  * @author Fengyuan
  *
  */
