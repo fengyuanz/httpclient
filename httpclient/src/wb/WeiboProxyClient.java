@@ -1,4 +1,5 @@
 package wb;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,8 +12,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -23,6 +26,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+
+import util.FileUtil;
 
 /**
  * Test commit from different place
@@ -41,17 +49,58 @@ public class WeiboProxyClient extends Thread {
 	private HttpGet get = null;
 	private ArrayList <String> file = null;
 	private String name = null;
+	
+	String userName = null;
+	String password = null;
+	String comment = null;
 
+	WeiboProxyClient(ArrayList <String> file, String name)
+	{
+//		HttpParams my_httpParams = new BasicHttpParams();
+//		HttpConnectionParams.setConnectionTimeout(my_httpParams, 240000);
+//		HttpConnectionParams.setSoTimeout(my_httpParams, 240000);
+//		DefaultHttpClient defaultHttpClient = new DefaultHttpClient(my_httpParams);
+//		client = defaultHttpClient;
+		
+		this.file = file;
+		this.name = name;
+	}
+	
 	public static void main(String[] args) 
 	{
 		
-			Thread thread = new WeiboProxyClient();
+		File folder = new File(".");
+		File[] listOfFiles = folder.listFiles();
+		ArrayList <String> oneFile = null;
+		
+		
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if (listOfFiles[i].isFile() && listOfFiles[i].getName().endsWith(".txt")) {
+				System.out.println("File " + listOfFiles[i].getName());
+				oneFile = FileUtil.readFile(listOfFiles[i]);
+				files.add(oneFile);
+			} 
+		}
+		
+		for (int i = 0; i < files.size(); i++) 
+		{
+			Thread thread = new WeiboProxyClient(files.get(i), "" + i);
 			thread.start();
+		}
+		
+//			Thread thread = new WeiboProxyClient();
+//			thread.start();
 
 	}
 
 	public void run() 
 	{
+		
+		
+		 userName = file.get(0);
+		 password = file.get(1);
+		 comment = file.get(2);
+
 		
 		getPage();
 
@@ -82,9 +131,9 @@ public class WeiboProxyClient extends Thread {
 
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 			nameValuePairs.add(new BasicNameValuePair("mobile",
-					"@outlook.com"));
+					userName));
 			nameValuePairs.add(new BasicNameValuePair(passwordfieldname,
-					"(1)"));
+					password));
 			nameValuePairs.add(new BasicNameValuePair("remember",
 					"on"));
 
@@ -117,7 +166,7 @@ public class WeiboProxyClient extends Thread {
 			post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 			response = client.execute(post);
 			String neurl = response.getFirstHeader("Location").getValue();
-			System.out.println(neurl);
+			System.out.println("new url:" + neurl);
 			StringBuffer sb = printResponse(response);
 			
 			HttpGet request2 = new HttpGet(neurl);
@@ -132,18 +181,67 @@ public class WeiboProxyClient extends Thread {
 				//List<NameValuePair> newnameValuePairs = new ArrayList<NameValuePair>(1);
 				String replyURL = null;
 
-				
-				
-			replyURL = prepareComments(onePost.toString(), nameValuePairs, "@小冰 整个什么吃好呢？");
+			
+			// System.out.println(comment);
+			String question = "";
+			while (!"再见".equals(question) )
+			{
+			System.out.print("我说:");
+			Scanner input = new Scanner(System.in);
+			
+			// System.out.println(input.nextLine());
+//			comment.
+			question = input.nextLine();
+			replyURL = prepareComments(onePost.toString(), nameValuePairs, "@小冰 " +question);
 			  
-			System.out.println(replyURL);
+			//System.out.println(replyURL);
 			post = new HttpPost(replyURL);  
-			post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			post.setEntity(new UrlEncodedFormEntity(nameValuePairs,"UTF-8"));
 			
 			  //HttpGet request4 = new HttpGet(replyURL);
 			  HttpResponse response4 = client.execute(post); 
 			  printResponse(response4);
 			
+			  try{
+				neurl = response4.getFirstHeader("Location").getValue();
+			  }
+			  catch (Exception e)
+			  {
+				  System.out.println("电脑:" + "拒绝回答！");
+			  }
+			  
+				//System.out.println("new url:" + neurl);
+				//StringBuffer sb = printResponse(response);
+				boolean answered = false;
+				for (int i = 0; i< 5; i++)
+				{
+					
+				
+				Thread.sleep(2000);
+				
+				  HttpGet request5 = new HttpGet(neurl);
+				  HttpResponse response5 = client.execute(request5);
+				  result = printResponse(response5);
+				  
+				  String reply= findPattern("@文明礼貌上网</a>:(.*?)</span>.*举报</a>.*"+question, result.toString());
+				if (reply != null && reply.length() > 0)
+				{
+					System.out.println("电脑:" + reply);
+					answered = true;
+					break;
+				}
+				else
+				{
+					System.out.print(".");
+				}
+				
+				}
+				if (!answered)
+				{
+					System.out.println("电脑:" + "拒绝回答！");
+				}
+			}
+				
 			return sb.toString();
 
 		} catch (Exception e) {
@@ -161,13 +259,13 @@ public class WeiboProxyClient extends Thread {
 		//String url = findPattern("<form action=\"(.*?)\" method=\"post\"><div>评论",	form);
 		String url = findPattern("<form action=\"(.*?)\" method=\"post\"><div>    评论",	form);
 
-		System.out.println("######" + url);
+		//System.out.println("######" + url);
 		String srcuid = findPattern("<input type=\"hidden\" name=\"srcuid\" value=\"(.*?)\" />", form);
-		System.out.println("######" + srcuid);
+		//System.out.println("######" + srcuid);
 		String id = findPattern("<input type=\"hidden\" name=\"id\" value=\"(.*?)\" />", form);
-		System.out.println("######" + id);
+		//System.out.println("######" + id);
 		String rl = findPattern("<input type=\"hidden\" name=\"rl\" value=\"(.*?)\" />", form);
-		System.out.println("######" + rl);
+		//System.out.println("######" + rl);
 
 		// System.out.println(name + ": " + commentText);
 		if (url == null)
@@ -199,7 +297,7 @@ public class WeiboProxyClient extends Thread {
 			sb.append(line + "\n");
 		}
 		
-		System.out.println("---------------1-----" + sb);
+		//System.out.println("---------------1-----" + sb);
 		
 		return sb;
 	}
@@ -234,7 +332,6 @@ public class WeiboProxyClient extends Thread {
 //		return null;
 //	}
 	
-
 	/**
 	 * Parsing
 	 */
@@ -257,6 +354,7 @@ public class WeiboProxyClient extends Thread {
 			return null;
 		}
 	}
-
+	
+	
 
 }
