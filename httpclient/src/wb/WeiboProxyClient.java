@@ -112,6 +112,7 @@ public class WeiboProxyClient extends Thread {
 	{
 		try {
 
+			
 			String url1="http://login.weibo.cn/login/?ns=1&revalid=2&backURL=http%3A%2F%2Fweibo.cn%2F&backTitle=%CE%A2%B2%A9&vt=";
 			post = new HttpPost(url1);
 
