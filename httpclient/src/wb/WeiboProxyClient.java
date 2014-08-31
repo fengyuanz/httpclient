@@ -54,6 +54,8 @@ public class WeiboProxyClient extends Thread {
 	String password = null;
 	String comment = null;
 
+	
+	
 	WeiboProxyClient(ArrayList <String> file, String name)
 	{
 //		HttpParams my_httpParams = new BasicHttpParams();
